@@ -15,7 +15,7 @@ cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
 frame_idx = 0
 wobble_frames = []
-time_to_record = 4
+time_to_record = 5
 
 prev_angle = None
 prev_center = None
@@ -50,7 +50,7 @@ while cap.isOpened():
             move_dist = np.linalg.norm(center - prev_center)
 
             # 휘청 조건: 어깨 각도 급변 + 중심점 급변
-            if angle_diff > 10 and move_dist > 0.1:
+            if angle_diff > 20 and move_dist > 0.04:
                 time = frame_idx / fps
 
                 if wobble_frames:
