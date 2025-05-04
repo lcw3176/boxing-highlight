@@ -50,7 +50,7 @@ while cap.isOpened():
             move_dist = np.linalg.norm(center - prev_center)
 
             # 휘청 조건: 어깨 각도 급변 + 중심점 급변
-            if angle_diff > 20 and move_dist > 0.04:
+            if angle_diff > 20 and move_dist > 0.1:
                 time = frame_idx / fps
 
                 if wobble_frames:
