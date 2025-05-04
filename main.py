@@ -22,8 +22,10 @@ def extract_wobbles(video_path, output_dir):
     prev_center = None
     prev_right_wrist = None
     prev_left_wrist = None
+    prev_left_knee = None
+    prev_right_knee = None
 
-    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+    with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
         while cap.isOpened():
             if frame_idx < skip_until_frame:
                 frame_idx += 1
@@ -52,8 +54,8 @@ def extract_wobbles(video_path, output_dir):
                 dy = right_shoulder.y - left_shoulder.y
                 angle = np.degrees(np.arctan2(dy, dx))
 
-                right_wrist = lm[mp_pose.PoseLandmark.RIGHT_WRIST]
-                left_wrist = lm[mp_pose.PoseLandmark.LEFT_WRIST]
+                right_wrist = lm[mp_pose.PoseLandmark.RIGHT_THUMB]
+                left_wrist = lm[mp_pose.PoseLandmark.LEFT_THUMB]
 
                 # 손목 속도 계산
                 right_speed = np.linalg.norm([
@@ -68,37 +70,55 @@ def extract_wobbles(video_path, output_dir):
 
                 max_speed = max(right_speed, left_speed)
 
-                if prev_angle is not None and prev_center is not None:
-                    angle_diff = abs(angle - prev_angle)
-                    move_dist = np.linalg.norm(center - prev_center)
+                left_knee = lm[mp_pose.PoseLandmark.LEFT_KNEE]
+                right_knee = lm[mp_pose.PoseLandmark.RIGHT_KNEE]
 
-                    if angle_diff > 20 and move_dist > 0.1 and max_speed > 0.2:
+                # 무릎 좌표 변화량 (속도)
+                if prev_left_knee and prev_right_knee:
+                    left_leg_speed = np.linalg.norm([
+                        left_knee.x - prev_left_knee.x,
+                        left_knee.y - prev_left_knee.y
+                    ])
+                    right_leg_speed = np.linalg.norm([
+                        right_knee.x - prev_right_knee.x,
+                        right_knee.y - prev_right_knee.y
+                    ])
+                    leg_speed = max(left_leg_speed, right_leg_speed)
+                else:
+                    leg_speed = 0
+
+                if prev_angle is not None and prev_center is not None:
+                    if max_speed > 0.4 or leg_speed > 0.4:
                         time = frame_idx / fps
                         print(f"🎯 타격+휘청 감지 at {time:.2f}s in {os.path.basename(video_path)}")
                         wobble_times.append(time)
 
+                        # score = angle_diff + max_speed * 50
+                        # if score > 300:
+                        #     skip_sec = 5
+                        # elif score > 200:
+                        #     skip_sec = 3
+                        # else:
+                        #     skip_sec = 2
+
+                        skip_sec = 3
+                        skip_until_frame = frame_idx + int(skip_sec * fps)
+
                         output_path = os.path.join(output_dir, f"wobble_{len(wobble_times)}.mp4")
                         (
                             ffmpeg
-                            .input(video_path, ss=time, t=3)
+                            .input(video_path, ss=time, t=skip_sec)
                             .output(output_path)
                             .run(overwrite_output=True, quiet=True)
                         )
-
-                        score = angle_diff + max_speed * 50
-                        if score > 70:
-                            skip_sec = 5
-                        elif score > 50:
-                            skip_sec = 3
-                        else:
-                            skip_sec = 2
-
-                        skip_until_frame = frame_idx + int(skip_sec * fps)
 
                 prev_angle = angle
                 prev_center = center
                 prev_right_wrist = right_wrist
                 prev_left_wrist = left_wrist
+                prev_left_knee = left_knee
+                prev_right_knee = right_knee
+
 
             frame_idx += 1
 
