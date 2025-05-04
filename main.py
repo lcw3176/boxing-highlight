@@ -15,6 +15,7 @@ cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
 frame_idx = 0
 wobble_frames = []
+time_to_record = 4
 
 prev_angle = None
 prev_center = None
@@ -49,10 +50,24 @@ while cap.isOpened():
             move_dist = np.linalg.norm(center - prev_center)
 
             # 휘청 조건: 어깨 각도 급변 + 중심점 급변
-            if angle_diff > 10 and move_dist > 0.05:
+            if angle_diff > 10 and move_dist > 0.1:
                 time = frame_idx / fps
-                print(f"휘청 감지 at {time:.2f}s")
+
+                if wobble_frames:
+                    before_time = int(wobble_frames[-1])
+                    now_time = int(time)
+                    already_exist = False
+
+                    for i in range(before_time, before_time + time_to_record):
+                        if i == now_time:
+                            already_exist = True
+                            break
+
+                    if already_exist:
+                        continue
+
                 wobble_frames.append(time)
+                print(f"휘청 감지 at {time:.2f}s")
         # | 상황               | 예상 `move_dist` |
         # | ---------------- | -------------- |
         # | 가만히 있음           | 0.001–0.01   |
@@ -69,18 +84,7 @@ cap.release()
 
 # 중복 제거 후 하이라이트 저장
 wobble_times = sorted(set(int(t) for t in wobble_frames))
-time_to_record = 4
 
-times_to_remove = []
-
-for i in wobble_times:
-    for j in range(i - time_to_record, i):
-        if j in wobble_times:
-            times_to_remove.append(i)
-            break
-
-for i in times_to_remove:
-    wobble_times.remove(i)
 
 # 하이라이트 영상 추출
 highlight_files = []
