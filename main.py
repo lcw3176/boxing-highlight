@@ -1,10 +1,10 @@
-import asyncio
 import os
-import cv2
-import numpy as np
-import mediapipe as mp
-import ffmpeg
 from glob import glob
+
+import cv2
+import ffmpeg
+import mediapipe as mp
+import numpy as np
 
 mp_pose = mp.solutions.pose
 
@@ -54,8 +54,8 @@ def extract_wobbles(video_path, output_dir):
                 dy = right_shoulder.y - left_shoulder.y
                 angle = np.degrees(np.arctan2(dy, dx))
 
-                right_wrist = lm[mp_pose.PoseLandmark.RIGHT_THUMB]
-                left_wrist = lm[mp_pose.PoseLandmark.LEFT_THUMB]
+                right_wrist = lm[mp_pose.PoseLandmark.RIGHT_WRIST]
+                left_wrist = lm[mp_pose.PoseLandmark.LEFT_WRIST]
 
                 # 손목 속도 계산
                 right_speed = np.linalg.norm([
