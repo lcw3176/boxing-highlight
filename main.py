@@ -25,7 +25,7 @@ def extract_wobbles(video_path, output_dir):
     prev_left_knee = None
     prev_right_knee = None
 
-    with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
+    with mp_pose.Pose(min_detection_confidence=0.3, min_tracking_confidence=0.3) as pose:
         while cap.isOpened():
             if frame_idx < skip_until_frame:
                 frame_idx += 1
@@ -88,7 +88,7 @@ def extract_wobbles(video_path, output_dir):
                     leg_speed = 0
 
                 if prev_angle is not None and prev_center is not None:
-                    if max_speed > 0.4 or leg_speed > 0.4:
+                    if max_speed > 0.5 or leg_speed > 0.5:
                         time = frame_idx / fps
                         print(f"🎯 타격+휘청 감지 at {time:.2f}s in {os.path.basename(video_path)}")
                         wobble_times.append(time)
@@ -118,7 +118,6 @@ def extract_wobbles(video_path, output_dir):
                 prev_left_wrist = left_wrist
                 prev_left_knee = left_knee
                 prev_right_knee = right_knee
-
 
             frame_idx += 1
 
